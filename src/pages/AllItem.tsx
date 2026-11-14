@@ -9,7 +9,11 @@ import {
   Sparkles, 
   MapPin, 
   Tag, 
+  Shirt,
   ArrowRight,
+  FileText,
+  Gem,
+  Briefcase,
   Inbox
 } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
@@ -23,11 +27,16 @@ interface AllItemProps {
 
 const CATEGORY_LIST = [
   { id: 'All', label: 'All Categories', icon: Layers },
-  { id: 'Wallet', label: 'Wallet', icon: Wallet },
-  { id: 'Keys', label: 'Keys', icon: Key },
-  { id: 'Laptops', label: 'Laptops', icon: Laptop },
-  { id: 'Animal', label: 'Animal', icon: Dog },
+  { id: 'Electronics', label: 'Electronics', icon: Laptop },
   { id: 'Mobile Phones', label: 'Mobile Phones', icon: Smartphone },
+  { id: 'Wallets', label: 'Wallets', icon: Wallet },
+  { id: 'Documents', label: 'Documents', icon: FileText },
+  { id: 'Bags', label: 'Bags', icon: Briefcase },
+  { id: 'Jewellery', label: 'Jewellery', icon: Gem },
+  { id: 'Keys', label: 'Keys', icon: Key },
+  { id: 'Clothing', label: 'Clothing', icon: Shirt },
+  { id: 'Pets', label: 'Pets', icon: Dog },
+  { id: 'Other', label: 'Other', icon: Layers },
 ];
 
 export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) {

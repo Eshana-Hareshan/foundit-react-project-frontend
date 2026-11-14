@@ -7,6 +7,7 @@ import { Home } from "../pages/Home"
 import  AllItem  from "../pages/AllItem"
 import Chats from "../pages/Chats"
 import MainLayout from "../components/layout/MainLayout"
+import AddItem from "../pages/AddItem"
 
 type RequireAuthTypes = { children: ReactNode; roles?: string[] }
 
@@ -56,9 +57,18 @@ export default function AppRouter() {
           <Route
             path="/chats"
             element={
-              <RequireAuth>
+              // <RequireAuth>
                 <Chats />
-              </RequireAuth>
+              // </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/add-item"
+            element={
+              // <RequireAuth>
+                <AddItem />
+              // </RequireAuth>
             }
           />
         </Route>
