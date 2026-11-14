@@ -114,6 +114,7 @@ function Register() {
         <Button
           onClick={handleRegister}
           isLoading={loading}
+          disabled={loading}
           variant="primary"
           className="w-full py-3"
         >

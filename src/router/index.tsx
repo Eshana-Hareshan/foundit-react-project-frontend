@@ -57,18 +57,18 @@ export default function AppRouter() {
           <Route
             path="/chats"
             element={
-              // <RequireAuth>
+              <RequireAuth>
                 <Chats />
-              // </RequireAuth>
+              </RequireAuth>
             }
           />
 
           <Route
             path="/add-item"
             element={
-              // <RequireAuth>
+              <RequireAuth>
                 <AddItem />
-              // </RequireAuth>
+              </RequireAuth>
             }
           />
         </Route>

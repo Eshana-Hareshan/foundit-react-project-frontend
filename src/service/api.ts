@@ -9,7 +9,7 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL
 })
 
-const PUBLIC_ENDPOINT = ["/auth/login", "/auth/register", "/auth/refresh"]
+const PUBLIC_ENDPOINT = ["/auth/login", "/auth/register", "/auth/refresh","/auth/google",]
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("ACCESS_TOKEN")
