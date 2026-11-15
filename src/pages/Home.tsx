@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom";
 import { getPaidAds } from "../service/item"
 import { PageHeader } from "../components/common/PageHeader"
 import CategoryPills from "../components/common/CategoryPills"
@@ -6,6 +7,11 @@ import SearchBar from "../components/common/SearchBar"
 import ItemCard, { type AdItem } from "../components/common/ItemCard"
 
 export const Home = () => {
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    navigate(`/all-items?search=${encodeURIComponent(searchQuery.trim())}`);
+  };
   const [items, setItems] = useState<AdItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -39,7 +45,7 @@ export const Home = () => {
   }
 
   const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.location.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -54,11 +60,11 @@ export const Home = () => {
         <p className="text-indigo-100 text-xs sm:text-base max-w-xl mx-auto mb-6">
           Search through lost & found listings across your local community.
         </p>
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch}/>
       </div>
 
       {/* Category Filter */}
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
           Browse Categories
         </h2>
@@ -66,7 +72,7 @@ export const Home = () => {
           selectedCategory={selectedCategory}
           setSelectedCategory={handleCategoryChange}
         />
-      </div>
+      </div> */}
 
       {/* Page Header */}
       <PageHeader

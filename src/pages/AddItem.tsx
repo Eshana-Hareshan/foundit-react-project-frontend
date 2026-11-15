@@ -2,7 +2,6 @@
 import { useState, type FormEvent, type ChangeEvent } from "react";
 import {
   Plus,
-  Camera,
   MapPin,
   Calendar,
   FileText,

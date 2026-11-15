@@ -194,7 +194,13 @@ export default function Header({ currentPage, setCurrentPage, currentUser }: Hea
                           </div>
 
                           <div className="py-1">
-                            <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2.5">
+                            <button
+                              onClick={() => {
+                                setIsProfileOpen(false);
+                                navigate("/my-profile");
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2.5"
+                            >
                               <UserIcon size={16} /> My Profile & Posts
                             </button>
 

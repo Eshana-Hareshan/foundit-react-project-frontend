@@ -8,6 +8,9 @@ import  AllItem  from "../pages/AllItem"
 import Chats from "../pages/Chats"
 import MainLayout from "../components/layout/MainLayout"
 import AddItem from "../pages/AddItem"
+import ItemDetails from "../pages/ItemDetails"
+import EditItem from "../pages/EditItem"
+import MyProfile from "../pages/MyProfile"
 
 type RequireAuthTypes = { children: ReactNode; roles?: string[] }
 
@@ -70,6 +73,33 @@ export default function AppRouter() {
                 <AddItem />
               </RequireAuth>
             }
+          />
+
+          <Route 
+            path="/items/:id" 
+            element={
+              <RequireAuth>
+                <ItemDetails />
+              </RequireAuth>
+            } 
+          />
+
+          <Route 
+            path="/items/:id/edit" 
+            element={
+            <RequireAuth>
+              <EditItem />
+            </RequireAuth>
+            } 
+          />
+
+          <Route 
+            path="/my-profile" 
+            element={
+              <RequireAuth>
+                <MyProfile />
+              </RequireAuth>
+            } 
           />
         </Route>
 

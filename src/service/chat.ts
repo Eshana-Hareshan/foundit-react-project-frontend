@@ -4,7 +4,7 @@ import api from "./api";
 // 1. Get all conversations of the logged-in user
 export const getMyConversations = async () => {
     const res = await api.get("/chats");
-    return res.data;
+    return res.data.conversations;
 };
 
 // Create or retrieve a conversation

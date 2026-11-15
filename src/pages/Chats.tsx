@@ -1,5 +1,6 @@
 
 import { useContext, useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Send } from "lucide-react";
 
 import { AuthContext } from "../context/AuthContext";
@@ -47,6 +48,10 @@ export default function Chats() {
 
     const currentUserId = user?.id || user?._id;
 
+    const [searchParams] = useSearchParams();
+
+    const requestedConversationId =searchParams.get("conversationId");
+
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeChat, setActiveChat] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -81,7 +86,16 @@ export default function Chats() {
                 setConversations(data);
 
                 if (data.length > 0) {
-                    setActiveChat(data[0]._id);
+                    const selectedConversation = data.find(
+                        (conversation: Conversation) =>
+                            conversation._id === requestedConversationId
+                    );
+
+                    setActiveChat(
+                        selectedConversation
+                            ? selectedConversation._id
+                            : data[0]._id
+                    );
                 }
             } catch (err) {
                 console.error("Failed to load conversations:", err);
@@ -92,7 +106,7 @@ export default function Chats() {
         };
 
         fetchConversations();
-    }, [currentUserId]);
+    }, [currentUserId, requestedConversationId]);
 
     // Load messages when a conversation is selected
     useEffect(() => {

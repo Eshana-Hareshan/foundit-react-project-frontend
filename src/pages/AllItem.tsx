@@ -20,6 +20,7 @@ import SearchBar from '../components/common/SearchBar';
 import ItemCard, { type AdItem } from '../components/common/ItemCard';
 import { getAllItems, getPaidAds } from '../service/item';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 interface AllItemProps {
   paidAds?: AdItem[];
@@ -40,6 +41,10 @@ const CATEGORY_LIST = [
 ];
 
 export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) {
+  const { user, loading: authLoading } = useAuth();
+
+  const currentUserId = user?.id || user?._id;
+
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'LOST' | 'FOUND'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,10 +55,29 @@ export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) 
 
   // Fetch all items when category changes
   useEffect(() => {
+    if (authLoading) return;
+
     let isMounted = true;
+
     getAllItems(1, 50, selectedCategory)
       .then((res) => {
         if (isMounted) {
+
+
+          console.log("Current User ID:", currentUserId);
+
+          console.log(
+            "Post Owner ID:",
+            res.data.map((item) => ({
+              itemName: item.itemName,
+              userId: item.userId,
+            }))
+          );
+
+          console.log("Fetched Items:", res.data);
+
+
+
           setItems(res.data);
         }
       })
@@ -69,7 +93,7 @@ export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) 
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory]);
+  }, [selectedCategory, currentUserId, authLoading]);
 
   // Fetch paid ads for the right sidebar if not passed
   useEffect(() => {
@@ -104,14 +128,26 @@ export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) 
   };
 
   const filteredItems = items.filter((item) => {
-    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-    const matchesStatus = statusFilter === 'ALL' || item.status?.toUpperCase() === statusFilter;
+    const isNotMyPost = !currentUserId || item.userId !== currentUserId;
+
+    const matchesCategory =
+      selectedCategory === 'All' || item.category === selectedCategory;
+
+    const matchesStatus =
+      statusFilter === 'ALL' ||
+      item.status?.toUpperCase() === statusFilter;
+
     const matchesSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesStatus && matchesSearch;
+
+    return isNotMyPost && matchesCategory && matchesStatus && matchesSearch;
   });
+
+  
+  console.log("Filtered Items:", filteredItems);
+
 
   return (
     <div className="space-y-6">
@@ -272,8 +308,8 @@ export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) 
                   >
                     <div className="flex gap-3">
                       <img 
-                        src={ad.image} 
-                        alt={ad.title} 
+                        src={ad.imageUrl} 
+                        alt={ad.itemName} 
                         className="w-16 h-16 rounded-lg object-cover shrink-0 group-hover:scale-105 transition-transform"
                       />
                       <div className="flex-1 min-w-0">
@@ -288,7 +324,7 @@ export default function AllItem({ paidAds: initialPaidAds }: AllItemProps = {}) 
                           </span>
                         </div>
                         <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-indigo-600">
-                          {ad.title}
+                          {ad.itemName}
                         </h4>
                         <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1 truncate">
                           <MapPin size={10} className="text-indigo-500 shrink-0" />
