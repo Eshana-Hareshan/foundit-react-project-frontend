@@ -7,6 +7,13 @@ export const getMyConversations = async () => {
     return res.data;
 };
 
+// Create or retrieve a conversation
+export const createConversation = async (itemId: string) => {
+    const res = await api.post("/chats", { itemId });
+    return res.data.conversation;
+};
+
+
 // 2. Get messages for a selected conversation
 export const getConversationMessages = async (
     conversationId: string
@@ -15,7 +22,7 @@ export const getConversationMessages = async (
         `/chats/${conversationId}/messages`
     );
 
-    return res.data;
+    return res.data.messages;
 };
 
 // 3. Send a message
@@ -28,5 +35,5 @@ export const sendMessage = async (
         { text }
     );
 
-    return res.data;
+    return res.data.newMessage;
 };
