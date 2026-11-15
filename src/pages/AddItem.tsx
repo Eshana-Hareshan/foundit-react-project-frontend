@@ -72,7 +72,7 @@ export default function AddItem() {
 
         // Send data to backend
         const response = await fetch(
-            `${import.meta.env.VITE_API_URL}/items`,
+            `${import.meta.env.VITE_API_BASE_URL}/items`,
             {
                 method: "POST",
                 headers: {
