@@ -1,8 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clock, MessageSquare, Home, User as UserIcon, Bell, Settings, LogOut, ChevronDown } from 'lucide-react';
+import {
+  Compass,
+  MessageSquare,
+  Home,
+  Plus,
+  LayoutGrid,
+  User as UserIcon,
+  Bell,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Menu,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { Button } from '../common/Button';
+import { getUnreadMessageCount } from "../../service/chat";
+import NotificationBell from "../notifications/NotificationBell";
+import { getPublicSettings } from "../../service/publicSettings";
 
 export interface CurrentUser {
   name?: string;
@@ -15,225 +30,322 @@ interface HeaderProps {
   currentPage?: string;
   setCurrentPage?: (page: string) => void;
   currentUser?: CurrentUser | null;
+  /** Unread chat count shown on the Chat button. Wire this to real data. */
+  unreadChats?: number;
 }
 
-const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
-export default function Header({ currentPage, setCurrentPage, currentUser }: HeaderProps) {
+export default function Header({
+  currentPage,
+  setCurrentPage,
+  currentUser,
+}: HeaderProps) {
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser ,loading} = useAuth();
+  const { user, setUser, loading } = useAuth();
 
-  const activeUser = currentUser || user ;
+  const activeUser = currentUser || user;
 
   const isCurrentAllItems = currentPage ? currentPage === 'allItems' : location.pathname === '/all-items';
   const isCurrentChats = currentPage ? currentPage === 'chats' : location.pathname === '/chats';
-  const isCurrentAddItem = currentPage? currentPage === 'addItem': location.pathname === '/add-item';
+  const isCurrentAddItem = currentPage ? currentPage === 'addItem' : location.pathname === '/add-item';
+
+  const [platformName, setPlatformName] = useState("Foundit");
+
+  const [platformDescription, setPlatformDescription] = useState("Lost & Found");
+
+  useEffect(() => {
+    // Don't request unread messages if user is not logged in
+    if (!activeUser) {
+        setUnreadMessageCount(0);
+        return;
+    }
+
+    const fetchUnreadCount = async () => {
+            try {
+                const count = await getUnreadMessageCount();
+                setUnreadMessageCount(count);
+            } catch (error) {
+                console.error("Failed to get unread message count:", error);
+            }
+        };
+
+        fetchUnreadCount();
+
+        const interval = setInterval(fetchUnreadCount, 10000);
+
+        return () => clearInterval(interval);
+    }, [activeUser]);
+
+  // Close profile menu on outside click / Escape
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsProfileOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isProfileOpen]);
+
+  const closeMenus = () => {
+    setIsProfileOpen(false);
+    setIsMobileOpen(false);
+  };
 
   const handleNavigateHome = () => {
-    if (setCurrentPage) {
-      setCurrentPage('home');
-    } else {
-      navigate('/');
-    }
+    closeMenus();
+    if (setCurrentPage) setCurrentPage('home');
+    else navigate('/');
   };
 
   const handleNavigateAddItem = () => {
-    if (setCurrentPage) {
-      setCurrentPage('addItem');
-    } else {
-      navigate('/add-item');
-    }
+    closeMenus();
+    if (setCurrentPage) setCurrentPage('addItem');
+    else navigate('/add-item');
   };
 
   const handleNavigateAllItems = () => {
-    if (setCurrentPage) {
-      setCurrentPage('allItems');
-    } else {
-      navigate('/all-items');
-    }
+    closeMenus();
+    if (setCurrentPage) setCurrentPage('allItems');
+    else navigate('/all-items');
   };
 
   const handleToggleChats = () => {
-    if (setCurrentPage) {
-      setCurrentPage(isCurrentChats ? 'home' : 'chats');
-    } else {
-      navigate(isCurrentChats ? '/' : '/chats');
-    }
+    closeMenus();
+    if (setCurrentPage) setCurrentPage(isCurrentChats ? 'home' : 'chats');
+    else navigate(isCurrentChats ? '/' : '/chats');
+  };
+
+  const handleLogin = () => {
+    closeMenus();
+    navigate('/login');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("ACCESS_TOKEN");
-    localStorage.removeItem("REFRESH_TOKEN");
+    closeMenus();
+    localStorage.removeItem('ACCESS_TOKEN');
+    localStorage.removeItem('REFRESH_TOKEN');
     setUser(null);
     navigate('/login');
   };
 
+  const pill = (active: boolean) =>
+    `inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
+      active
+        ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200'
+        : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
+    }`;
+
+  const chatBtn = `relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full text-white shadow-sm shadow-emerald-200 transition-all ${
+    isCurrentChats ? 'bg-emerald-900 hover:bg-emerald-800' : 'bg-emerald-600 hover:bg-emerald-700'
+  }`;
+
+  const chatContent = isCurrentChats ? (
+    <>
+      <Home size={16} />
+      <span>Home</span>
+    </>
+  ) : (
+    <>
+      <MessageSquare size={16} />
+      <span>Chat</span>
+      {unreadMessageCount > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-amber-400 text-emerald-950 text-[10px] rounded-full flex items-center justify-center font-bold ring-2 ring-white">
+          {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+        </span>
+      )}
+    </>
+  );
+
+  useEffect(() => {
+      const fetchPublicSettings = async () => {
+          try {
+              const response = await getPublicSettings();
+
+              setPlatformName(response.data.platformName);
+              setPlatformDescription(response.data.description);
+
+          } catch (error) {
+              console.error("Failed to load platform settings:", error);
+          }
+      };
+
+      fetchPublicSettings();
+  }, []);
+
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+    <header className="bg-white/85 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center justify-between gap-4">
           
-          {/* Logo Section */}
-          <div 
-            onClick={handleNavigateHome}
-            className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity"
+          {/* Logo */}
+          <button
+              type="button"
+              onClick={handleNavigateHome}
+              className="group flex items-center gap-2.5 hover:opacity-90 transition-opacity text-left"
+              aria-label={`${platformName} home`}
           >
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-200">
-              <Clock size={22} className="stroke-[2.5]" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-black tracking-tight text-slate-900 leading-none">
-                found<span className="text-indigo-600">it</span>
-              </span>
-              <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                Lost & Found Portal
-              </span>
-            </div>
-          </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center shadow-md shadow-emerald-200">
+                  <Compass
+                      size={22}
+                      className="stroke-[2.25] transition-transform duration-500 group-hover:rotate-[135deg]"
+                  />
+              </div>
 
-          {/* Navigation Actions */}
-          <div className="flex items-center gap-3">
-
-            {/* Add Item Button */}
-            <button
-              onClick={handleNavigateAddItem}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${
-                isCurrentAddItem
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-300'
-              }`}
-            >
-              + Add Item
-            </button>
-            
-            {/* All Items Button (Navigates to dedicated page) */}
-            <button 
-              onClick={handleNavigateAllItems}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${
-                isCurrentAllItems
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-300'
-              }`}
-            >
-              All Items
-            </button>
-
-            {/* Chat / Home Dynamic Toggle Button */}
-            <button 
-              onClick={handleToggleChats}
-              className={`relative px-4 py-2 text-sm font-semibold rounded-lg shadow-sm flex items-center gap-2 transition-all ${
-                isCurrentChats
-                  ? 'bg-slate-900 text-white hover:bg-slate-800'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
-              }`}
-            >
-              {isCurrentChats ? (
-                <>
-                  <Home size={16} />
-                  <span>Home</span>
-                </>
-              ) : (
-                <>
-                  <MessageSquare size={16} />
-                  <span>Chat</span>
-                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                    3
+              <div className="flex flex-col">
+                  <span className="text-2xl font-black tracking-tight text-emerald-950 leading-none">
+                      {platformName}
                   </span>
-                </>
-              )}
-            </button>
 
-            {/* Login Button / Profile Menu */}
-            {!loading && !activeUser ? (
+                  <span className="text-[10px] font-semibold tracking-wider text-emerald-700/60 uppercase">
+                      {platformDescription}
+                  </span>
+              </div>
+          </button>
+
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1.5">
+            <button onClick={handleNavigateAddItem} className={pill(isCurrentAddItem)}>
+              <Plus size={16} /> Add Item
+            </button>
+            <button onClick={handleNavigateAllItems} className={pill(isCurrentAllItems)}>
+              <LayoutGrid size={16} /> All Items
+            </button>
+            <button onClick={handleToggleChats} className={`${chatBtn} ml-1`}>
+              {chatContent}
+            </button>
+          </nav>
+
+          {/* Right side: auth + mobile toggle */}
+          <div className="flex items-center gap-2">
+            {!loading && !activeUser && (
               <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all"
+                onClick={handleLogin}
+                className="px-4 py-2 text-sm font-semibold rounded-full bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200 transition-all"
               >
                 Log In
               </button>
-            ) : (
-              !loading && activeUser && (
-                <div className="relative">
-                  {/* Profile & Settings Menu */}
-                  {!loading && activeUser && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className="flex items-center gap-2.5 p-1.5 pr-3 rounded-lg border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 transition-all shadow-xs"
-                      >
-                        <img
-                          src={activeUser.avatar || DEFAULT_AVATAR}
-                          alt={activeUser.name || 'User'}
-                          className="w-8 h-8 rounded-full object-cover border border-indigo-200"
-                        />
-
-                        <div className="hidden md:flex flex-col text-left">
-                          <span className="text-xs font-bold text-slate-800 leading-tight">
-                            {activeUser.name || 'User'}
-                          </span>
-                          <span className="text-[10px] text-slate-500">
-                            Profile & Settings
-                          </span>
-                        </div>
-
-                        <ChevronDown size={14} className="text-slate-400" />
-                      </button>
-
-                      {isProfileOpen && (
-                        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50">
-
-                          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70 rounded-t-2xl">
-                            <p className="text-sm font-bold text-slate-900">
-                              {activeUser.name || 'User'}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate">
-                              {activeUser.email || ''}
-                            </p>
-                          </div>
-
-                          <div className="py-1">
-                            <button
-                              onClick={() => {
-                                setIsProfileOpen(false);
-                                navigate("/my-profile");
-                              }}
-                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2.5"
-                            >
-                              <UserIcon size={16} /> My Profile & Posts
-                            </button>
-
-                            <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2.5">
-                              <Bell size={16} /> Notifications & Alerts
-                            </button>
-
-                            <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2.5">
-                              <Settings size={16} /> Settings & Security
-                            </button>
-                          </div>
-
-                          <div className="border-t border-slate-100 pt-1 mt-1">
-                            <button
-                              onClick={handleLogout}
-                              className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2.5"
-                            >
-                              <LogOut size={16} /> Log Out
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                </div>
-              )
             )}
 
-            
+            {!loading && activeUser && (
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setIsProfileOpen((o) => !o)}
+                  aria-haspopup="menu"
+                  aria-expanded={isProfileOpen}
+                  className="flex items-center gap-2.5 p-1 pr-2.5 rounded-full border border-emerald-200 hover:border-emerald-300 bg-white hover:bg-emerald-50 transition-all"
+                >
+                  <img
+                    src={activeUser.avatar || DEFAULT_AVATAR}
+                    alt={activeUser.name || 'User'}
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-200"
+                  />
+                  <div className="hidden lg:flex flex-col text-left">
+                    <span className="text-xs font-bold text-slate-800 leading-tight">
+                      {activeUser.name || 'User'}
+                    </span>
+                    <span className="text-[10px] text-slate-500">Profile &amp; Settings</span>
+                  </div>
+                  <ChevronDown
+                    size={14}
+                    className={`text-emerald-600 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
 
+                {isProfileOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl shadow-emerald-900/10 border border-emerald-100 py-2 z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-emerald-100 bg-emerald-50/70 rounded-t-2xl">
+                      <p className="text-sm font-bold text-slate-900">{activeUser.name || 'User'}</p>
+                      <p className="text-xs text-slate-500 truncate">{activeUser.email || ''}</p>
+                    </div>
+
+                    <div className="py-1">
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          closeMenus();
+                          navigate('/my-profile');
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2.5"
+                      >
+                        <UserIcon size={16} /> My Profile &amp; Posts
+                      </button>
+                      <div className="px-4 py-2 flex items-center justify-between">
+                          <span className="text-sm text-slate-700 flex items-center gap-2.5">
+                              <Bell size={16} />
+                              Notifications &amp; Alerts
+                          </span>
+
+                          <NotificationBell />
+                      </div>
+
+                      <button
+                        role="menuitem"
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2.5"
+                      >
+                        <Settings size={16} /> Settings &amp; Security
+                      </button>
+                    </div>
+
+                    <div className="border-t border-emerald-100 pt-1 mt-1">
+                      <button
+                        role="menuitem"
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2.5"
+                      >
+                        <LogOut size={16} /> Log Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setIsMobileOpen((o) => !o)}
+              aria-label="Toggle menu"
+              aria-expanded={isMobileOpen}
+              className="md:hidden p-2 rounded-full text-emerald-800 hover:bg-emerald-50 transition-colors"
+            >
+              {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile nav panel */}
+        {isMobileOpen && (
+          <nav className="md:hidden mt-3 pt-3 border-t border-emerald-100 flex flex-col gap-1.5">
+            <button onClick={handleNavigateAddItem} className={`${pill(isCurrentAddItem)} w-full`}>
+              <Plus size={16} /> Add Item
+            </button>
+            <button onClick={handleNavigateAllItems} className={`${pill(isCurrentAllItems)} w-full`}>
+              <LayoutGrid size={16} /> All Items
+            </button>
+            <button onClick={handleToggleChats} className={`${chatBtn} w-full justify-center`}>
+              {chatContent}
+            </button>
+          </nav>
+        )}
       </div>
     </header>
   );

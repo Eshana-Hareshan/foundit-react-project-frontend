@@ -1,7 +1,6 @@
-
-import { useContext, useEffect, useState, type FormEvent } from "react";
+import { useContext, useEffect, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Send } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, MessagesSquare, Loader2, Package } from "lucide-react";
 
 import { AuthContext } from "../context/AuthContext";
 import {
@@ -42,6 +41,18 @@ interface ChatMessage {
     createdAt?: string;
 }
 
+const initialOf = (name?: string) => (name?.trim()?.[0] || "?").toUpperCase();
+
+const Avatar = ({ name, size = "md" }: { name?: string; size?: "md" | "lg" }) => (
+    <div
+        className={`shrink-0 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 text-white font-bold flex items-center justify-center ${
+            size === "lg" ? "w-11 h-11 text-base" : "w-10 h-10 text-sm"
+        }`}
+    >
+        {initialOf(name)}
+    </div>
+);
+
 export default function Chats() {
     const auth = useContext(AuthContext);
     const user = auth?.user;
@@ -50,7 +61,7 @@ export default function Chats() {
 
     const [searchParams] = useSearchParams();
 
-    const requestedConversationId =searchParams.get("conversationId");
+    const requestedConversationId = searchParams.get("conversationId");
 
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -61,6 +72,11 @@ export default function Chats() {
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState("");
+
+    // Mobile only: show the conversation list or the open chat
+    const [mobileShowChat, setMobileShowChat] = useState<boolean>(!!requestedConversationId);
+
+    const bottomRef = useRef<HTMLDivElement>(null);
 
     // Get the other participant in the conversation
     const getOtherUser = (conversation: Conversation) => {
@@ -147,6 +163,11 @@ export default function Chats() {
         };
     }, [activeChat]);
 
+    // Keep the newest message in view
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, [messages, loadingMessages]);
+
     // Send a message and save it in MongoDB
     const handleSendMessage = async (e: FormEvent) => {
         e.preventDefault();
@@ -196,96 +217,168 @@ export default function Chats() {
     );
 
     if (auth?.loading) {
-        return <p className="p-6 text-slate-500">Loading user...</p>;
+        return (
+            <div className="flex items-center justify-center gap-2 py-20 text-emerald-700 text-sm">
+                <Loader2 size={18} className="animate-spin" /> Loading user...
+            </div>
+        );
     }
 
     if (!user) {
-        return <p className="p-6 text-slate-500">Please login to view your chats.</p>;
+        return (
+            <div className="max-w-md mx-auto text-center py-16 px-6 bg-white border border-dashed border-emerald-200 rounded-2xl">
+                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                    <MessageSquare size={26} />
+                </div>
+                <p className="font-bold text-emerald-950">Please log in</p>
+                <p className="text-sm text-slate-500 mt-1">You need to be logged in to view your chats.</p>
+            </div>
+        );
     }
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[500px]">
+        <div className="bg-white border border-emerald-100 rounded-2xl shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-13rem)] min-h-[520px]">
 
-            {/* Conversation List */}
-            <div className="border-r border-slate-200 p-4 space-y-3 bg-slate-50">
-                <h2 className="font-extrabold text-slate-900 text-lg">
-                    Active Conversations
-                </h2>
+            {/* ============ Conversation List ============ */}
+            <div
+                className={`${
+                    mobileShowChat ? "hidden md:flex" : "flex"
+                } flex-col min-h-0 border-r border-emerald-100 bg-emerald-50/40`}
+            >
+                <div className="p-4 border-b border-emerald-100 bg-white flex items-center gap-2">
+                    <MessagesSquare size={18} className="text-emerald-600" />
+                    <h2 className="font-extrabold text-emerald-950 text-base">Conversations</h2>
+                    {conversations.length > 0 && (
+                        <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {conversations.length}
+                        </span>
+                    )}
+                </div>
 
-                {loadingChats ? (
-                    <p className="text-sm text-slate-500">
-                        Loading conversations...
-                    </p>
-                ) : conversations.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                        No conversations yet.
-                    </p>
-                ) : (
-                    <div className="space-y-2">
-                        {conversations.map((conversation) => {
-                            const otherUser = getOtherUser(conversation);
-
-                            return (
-                                <div
-                                    key={conversation._id}
-                                    onClick={() => setActiveChat(conversation._id)}
-                                    className={`p-3 rounded-xl cursor-pointer transition-all border ${
-                                        activeChat === conversation._id
-                                            ? "bg-indigo-600 text-white border-indigo-600"
-                                            : "bg-white hover:bg-slate-100 border-slate-200"
-                                    }`}
-                                >
-                                    <p className="font-bold text-sm">
-                                        {otherUser?.name || "Unknown user"}
-                                    </p>
-
-                                    <p className={`text-xs ${
-                                        activeChat === conversation._id
-                                            ? "text-indigo-100"
-                                            : "text-slate-500"
-                                    }`}>
-                                        {conversation.itemId?.itemName || "Item"}
-                                    </p>
-
-                                    <p className={`text-xs mt-1 truncate ${
-                                        activeChat === conversation._id
-                                            ? "text-indigo-100"
-                                            : "text-slate-400"
-                                    }`}>
-                                        {conversation.lastMessage || "No messages yet"}
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            {/* Message Area */}
-            <div className="col-span-2 flex flex-col justify-between p-4 min-h-[500px]">
-
-                {selectedConversation ? (
-                    <>
-                        <div className="border-b border-slate-200 pb-3 mb-3">
-                            <h3 className="font-bold text-slate-900">
-                                {getOtherUser(selectedConversation)?.name}
-                            </h3>
-
-                            <p className="text-xs text-slate-500">
-                                {selectedConversation.itemId?.itemName}
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                    {loadingChats ? (
+                        <div className="space-y-2 animate-pulse">
+                            {[1, 2, 3].map((n) => (
+                                <div key={n} className="h-16 rounded-xl bg-emerald-100/60" />
+                            ))}
+                        </div>
+                    ) : conversations.length === 0 ? (
+                        <div className="text-center py-10 px-4">
+                            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+                                <MessageSquare size={22} />
+                            </div>
+                            <p className="text-sm font-semibold text-emerald-950">No conversations yet</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Contact an item owner to start chatting.
                             </p>
                         </div>
+                    ) : (
+                        conversations.map((conversation) => {
+                            const otherUser = getOtherUser(conversation);
+                            const isActive = activeChat === conversation._id;
 
-                        <div className="space-y-3 overflow-y-auto flex-1 max-h-[380px] p-2">
+                            return (
+                                <button
+                                    type="button"
+                                    key={conversation._id}
+                                    onClick={() => {
+                                        setActiveChat(conversation._id);
+                                        setMobileShowChat(true);
+                                    }}
+                                    className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all border ${
+                                        isActive
+                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200"
+                                            : "bg-white hover:bg-emerald-50 border-emerald-100 hover:border-emerald-200"
+                                    }`}
+                                >
+                                    <Avatar name={otherUser?.name} />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-sm truncate">
+                                            {otherUser?.name || "Unknown user"}
+                                        </p>
+                                        <p
+                                            className={`text-[11px] font-medium truncate ${
+                                                isActive ? "text-emerald-100" : "text-emerald-700"
+                                            }`}
+                                        >
+                                            {conversation.itemId?.itemName || "Item"}
+                                        </p>
+                                        <p
+                                            className={`text-xs truncate mt-0.5 ${
+                                                isActive ? "text-emerald-100/80" : "text-slate-400"
+                                            }`}
+                                        >
+                                            {conversation.lastMessage || "No messages yet"}
+                                        </p>
+                                    </div>
+                                </button>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
 
+            {/* ============ Message Area ============ */}
+            <div
+                className={`${
+                    mobileShowChat ? "flex" : "hidden md:flex"
+                } md:col-span-2 flex-col min-h-0 bg-white`}
+            >
+                {selectedConversation ? (
+                    <>
+                        {/* Chat header */}
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-emerald-100 bg-white">
+                            <button
+                                type="button"
+                                onClick={() => setMobileShowChat(false)}
+                                aria-label="Back to conversations"
+                                className="md:hidden p-2 -ml-1 rounded-full text-emerald-700 hover:bg-emerald-50"
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
+
+                            <Avatar name={getOtherUser(selectedConversation)?.name} size="lg" />
+
+                            <div className="min-w-0 flex-1">
+                                <h3 className="font-bold text-emerald-950 truncate">
+                                    {getOtherUser(selectedConversation)?.name}
+                                </h3>
+                                <p className="text-xs text-slate-500 truncate">
+                                    Re: {selectedConversation.itemId?.itemName}
+                                </p>
+                            </div>
+
+                            {/* Item chip */}
+                            <div className="hidden sm:flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
+                                {selectedConversation.itemId?.imageUrl ? (
+                                    <img
+                                        src={selectedConversation.itemId.imageUrl}
+                                        alt={selectedConversation.itemId.itemName}
+                                        className="w-7 h-7 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <Package size={16} className="text-emerald-600 ml-1" />
+                                )}
+                                <span className="text-xs font-semibold text-emerald-800 max-w-[120px] truncate">
+                                    {selectedConversation.itemId?.itemName}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-3 bg-gradient-to-b from-emerald-50/40 to-white">
                             {loadingMessages ? (
-                                <p className="text-sm text-slate-500">
-                                    Loading messages...
-                                </p>
+                                <div className="flex items-center justify-center gap-2 text-sm text-emerald-700 mt-10">
+                                    <Loader2 size={16} className="animate-spin" /> Loading messages...
+                                </div>
                             ) : messages.length === 0 ? (
-                                <p className="text-sm text-slate-500 text-center mt-10">
-                                    No messages yet. Start the conversation!
-                                </p>
+                                <div className="text-center mt-16">
+                                    <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+                                        <MessageSquare size={22} />
+                                    </div>
+                                    <p className="text-sm font-semibold text-emerald-950">No messages yet</p>
+                                    <p className="text-xs text-slate-500 mt-1">Start the conversation!</p>
+                                </div>
                             ) : (
                                 messages.map((msg) => {
                                     const senderId =
@@ -293,26 +386,27 @@ export default function Chats() {
                                             ? msg.senderId
                                             : msg.senderId?._id;
 
-                                    const isMine =
-                                        senderId === currentUserId;
+                                    const isMine = senderId === currentUserId;
 
                                     return (
                                         <div
                                             key={msg._id}
-                                            className={`flex ${
-                                                isMine
-                                                    ? "justify-end"
-                                                    : "justify-start"
-                                            }`}
+                                            className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                                         >
-                                            <div className={`p-3 rounded-2xl text-xs max-w-xs break-words ${
-                                                isMine
-                                                    ? "bg-indigo-600 text-white"
-                                                    : "bg-slate-100 text-slate-800"
-                                            }`}>
+                                            <div
+                                                className={`px-3.5 py-2.5 text-sm max-w-[80%] sm:max-w-sm break-words shadow-sm ${
+                                                    isMine
+                                                        ? "bg-emerald-600 text-white rounded-2xl rounded-br-md"
+                                                        : "bg-white text-slate-800 border border-emerald-100 rounded-2xl rounded-bl-md"
+                                                }`}
+                                            >
                                                 <p>{msg.text}</p>
 
-                                                <span className="text-[9px] opacity-70 block text-right mt-1">
+                                                <span
+                                                    className={`text-[10px] block text-right mt-1 ${
+                                                        isMine ? "text-emerald-100/80" : "text-slate-400"
+                                                    }`}
+                                                >
                                                     {msg.createdAt
                                                         ? new Date(msg.createdAt).toLocaleTimeString([], {
                                                             hour: "2-digit",
@@ -325,38 +419,45 @@ export default function Chats() {
                                     );
                                 })
                             )}
+                            <div ref={bottomRef} />
                         </div>
 
                         {error && (
-                            <p className="text-sm text-red-500 mt-2">
+                            <p className="mx-4 mb-2 text-xs font-medium text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
                                 {error}
                             </p>
                         )}
 
+                        {/* Composer */}
                         <form
                             onSubmit={handleSendMessage}
-                            className="flex gap-2 pt-3 border-t border-slate-200"
+                            className="flex items-center gap-2 p-3 border-t border-emerald-100 bg-white"
                         >
                             <input
                                 type="text"
                                 placeholder="Type your message..."
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
-                                className="flex-1 px-4 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:border-indigo-600"
+                                className="flex-1 px-4 py-2.5 text-sm bg-emerald-50/60 border border-emerald-100 rounded-full outline-none transition-all focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                             />
 
                             <button
                                 type="submit"
                                 disabled={sending || !messageInput.trim()}
-                                className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50"
+                                aria-label="Send message"
+                                className="w-10 h-10 shrink-0 flex items-center justify-center bg-emerald-600 text-white rounded-full shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:shadow-none"
                             >
-                                <Send size={16} />
+                                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                             </button>
                         </form>
                     </>
                 ) : (
-                    <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
-                        Select a conversation to view messages.
+                    <div className="flex flex-1 flex-col items-center justify-center text-center px-6">
+                        <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-4">
+                            <MessagesSquare size={30} />
+                        </div>
+                        <p className="font-bold text-emerald-950">Select a conversation</p>
+                        <p className="text-sm text-slate-500 mt-1">Choose a chat on the left to view messages.</p>
                     </div>
                 )}
             </div>

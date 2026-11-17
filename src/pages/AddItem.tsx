@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent, type ChangeEvent } from "react";
 import {
   Plus,
@@ -7,10 +6,35 @@ import {
   FileText,
   Star,
   UploadCloud,
-  X
+  X,
+  Search,
+  PackageCheck,
+  ShieldCheck,
+  Camera,
+  Loader2,
 } from "lucide-react";
 
+const CATEGORIES = [
+  "Electronics",
+  "Mobile Phones",
+  "Wallets",
+  "Documents",
+  "Bags",
+  "Jewellery",
+  "Keys",
+  "Clothing",
+  "Pets",
+  "Other",
+];
+
+const inputBase =
+  "w-full py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+
+const labelBase = "block text-sm font-semibold text-slate-700 mb-1.5";
+
 export default function AddItem() {
+  const [status, setStatus] = useState<"LOST" | "FOUND">("FOUND");
+
   const [itemName, setItemName] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
@@ -20,6 +44,17 @@ export default function AddItem() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isLost = status === "LOST";
+
+  const handleRemoveImage = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImage(null);
+    setImagePreview("");
+  };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,130 +79,151 @@ export default function AddItem() {
     e.preventDefault();
 
     if (!image) {
-        alert("Please upload an item photo.");
-        return;
+      alert("Please upload an item photo.");
+      return;
     }
 
     try {
-        setIsSubmitting(true);
+      setIsSubmitting(true);
 
-        // Create FormData to send text and image together
-        const formData = new FormData();
+      // Create FormData to send text and image together
+      const formData = new FormData();
 
-        formData.append("itemName", itemName);
-        formData.append("category", category);
-        formData.append("location", location);
-        formData.append("description", description);
-        formData.append("dateFound", dateFound);
-        formData.append("additionalDetails", additionalDetails);
-        formData.append("image", image);
+      formData.append("itemName", itemName);
+      formData.append("category", category);
+      formData.append("location", location);
+      formData.append("description", description);
+      formData.append("dateFound", dateFound);
+      formData.append("additionalDetails", additionalDetails);
+      formData.append("status", status);
+      formData.append("image", image);
 
-        // Get access token
-        const token = localStorage.getItem("ACCESS_TOKEN");
+      // Get access token
+      const token = localStorage.getItem("ACCESS_TOKEN");
 
-        if (!token) {
-            throw new Error("Please login first.");
-        }
+      if (!token) {
+        throw new Error("Please login first.");
+      }
 
-        // Send data to backend
-        const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/items`,
-            {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-                body: formData
-            }
-        );
+      // Send data to backend
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/items`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.message || "Failed to add item.");
-        }
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add item.");
+      }
 
-        alert("Found item added successfully!");
+      alert(
+        status === "LOST"
+          ? "Lost item reported successfully!"
+          : "Found item added successfully!"
+      );
+      console.log("Saved item:", data.item);
 
-        console.log("Saved item:", data.item);
+      // Clear form
+      setItemName("");
+      setCategory("");
+      setLocation("");
+      setDescription("");
+      setDateFound("");
+      setAdditionalDetails("");
 
-        // Clear form
-        setItemName("");
-        setCategory("");
-        setLocation("");
-        setDescription("");
-        setDateFound("");
-        setAdditionalDetails("");
-
-        handleRemoveImage();
-
+      handleRemoveImage();
     } catch (error) {
-        console.error("Add Item Error:", error);
+      console.error("Add Item Error:", error);
 
-        alert(
-            error instanceof Error
-                ? error.message
-                : "Something went wrong!"
-        );
-
+      alert(error instanceof Error ? error.message : "Something went wrong!");
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-    };
-
-  const handleRemoveImage = () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
-    setImage(null);
-    setImagePreview("");
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-10">
-
-        {/* Page Heading */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
-            <Plus size={30} />
+    <div className="max-w-5xl mx-auto">
+      {/* Page heading */}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-4">
+          <div
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-white flex items-center justify-center shadow-lg transition-colors ${
+              isLost
+                ? "bg-gradient-to-br from-rose-500 to-rose-700 shadow-rose-200"
+                : "bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-emerald-200"
+            }`}
+          >
+            {isLost ? <Search size={26} /> : <PackageCheck size={26} />}
           </div>
-
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Add Found Item
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-emerald-950">
+              {isLost ? "Report a lost item" : "Add a found item"}
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Help someone get their lost item back!
+            <p className="text-sm text-slate-500 mt-0.5">
+              {isLost
+                ? "Tell others about the item you have lost."
+                : "Help someone get their lost item back!"}
             </p>
           </div>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Post type toggle */}
+      <div className="mb-6">
+        <span className={labelBase}>I want to post a...</span>
+        <div className="relative grid grid-cols-2 p-1.5 bg-emerald-50 border border-emerald-100 rounded-2xl max-w-md">
+          <span
+            aria-hidden
+            className={`absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.375rem)] rounded-xl shadow-md transition-all duration-300 ${
+              isLost ? "translate-x-0 bg-rose-600" : "translate-x-full bg-emerald-600"
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setStatus("LOST")}
+            className={`relative z-10 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              isLost ? "text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Search size={16} /> Lost
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatus("FOUND")}
+            className={`relative z-10 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              !isLost ? "text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <PackageCheck size={16} /> Found
+          </button>
+        </div>
+      </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Item Photo <span className="text-rose-500">*</span>
-            </label>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* ============ LEFT: PHOTO ============ */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 lg:sticky lg:top-24">
+            <div className="flex items-center gap-2 mb-4">
+              <Camera size={18} className="text-emerald-600" />
+              <h2 className="font-bold text-emerald-950">
+                Item photo <span className="text-rose-500">*</span>
+              </h2>
+            </div>
 
             {!imagePreview ? (
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-indigo-300 rounded-xl bg-indigo-50/40 hover:bg-indigo-50 cursor-pointer transition">
-                <UploadCloud size={38} className="text-indigo-600 mb-3" />
-
-                <span className="font-semibold text-slate-700">
-                  Upload a Photo
-                </span>
-
-                <span className="text-sm text-slate-500 mt-1">
-                  Click to browse
-                </span>
-
-                <span className="text-xs text-slate-400 mt-2">
+              <label className="group flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-emerald-300 rounded-2xl bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-500 cursor-pointer transition-all">
+                <div className="w-14 h-14 rounded-full bg-white shadow-sm text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <UploadCloud size={28} />
+                </div>
+                <span className="font-semibold text-slate-800">Upload a photo</span>
+                <span className="text-sm text-slate-500 mt-0.5">Click to browse</span>
+                <span className="text-xs text-slate-400 mt-3 px-2.5 py-1 rounded-full bg-white border border-emerald-100">
                   JPG, PNG up to 1MB
                 </span>
-
                 <input
                   type="file"
                   accept="image/*"
@@ -176,167 +232,182 @@ export default function AddItem() {
                 />
               </label>
             ) : (
-              <div className="relative w-full max-w-sm">
+              <div className="relative">
                 <img
                   src={imagePreview}
                   alt="Item preview"
-                  className="w-full h-56 object-cover rounded-xl border border-slate-200"
+                  className="w-full aspect-square object-cover rounded-2xl border border-emerald-100"
                 />
-
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow hover:bg-rose-50"
+                  aria-label="Remove photo"
+                  className="absolute top-3 right-3 p-2 bg-white/95 backdrop-blur rounded-full shadow-md hover:bg-rose-50 transition-colors"
                 >
                   <X size={18} className="text-rose-600" />
                 </button>
               </div>
             )}
-          </div>
 
+            <div className="mt-4 flex gap-2.5 p-3 rounded-xl bg-emerald-50 text-emerald-900 text-xs leading-relaxed">
+              <ShieldCheck size={16} className="shrink-0 mt-0.5 text-emerald-600" />
+              <p>
+                A clear photo helps the right person recognise the item. Avoid showing personal
+                details such as ID numbers.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ============ RIGHT: DETAILS ============ */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 sm:p-7 space-y-5">
           {/* Item Name and Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Item Name *
+              <label className={labelBase}>
+                Item name <span className="text-rose-500">*</span>
               </label>
-
               <div className="relative">
-                <FileText size={18} className="absolute left-3 top-3.5 text-slate-400" />
-
+                <FileText
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   type="text"
                   required
                   value={itemName}
                   onChange={(e) => setItemName(e.target.value)}
                   placeholder="e.g. iPhone 15, Blue Wallet"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-600"
+                  className={`${inputBase} pl-11 pr-4`}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Category *
+              <label className={labelBase}>
+                Category <span className="text-rose-500">*</span>
               </label>
-
               <select
                 required
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-600 bg-white"
+                className={`${inputBase} px-4`}
               >
                 <option value="">Select category</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Mobile Phones">Mobile Phones</option>
-                <option value="Wallets">Wallets</option>
-                <option value="Documents">Documents</option>
-                <option value="Bags">Bags</option>
-                <option value="Jewellery">Jewellery</option>
-                <option value="Keys">Keys</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Pets">Pets</option>
-                <option value="Other">Other</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
-          {/* Found Location */}
+          {/* Location */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Found Location *
+            <label className={labelBase}>
+              {isLost ? "Last seen location" : "Found location"}{" "}
+              <span className="text-rose-500">*</span>
             </label>
-
             <div className="relative">
-              <MapPin size={18} className="absolute left-3 top-3.5 text-slate-400" />
-
+              <MapPin
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
               <input
                 type="text"
                 required
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="e.g. Panadura Railway Station"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-600"
+                className={`${inputBase} pl-11 pr-4`}
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Description *
+            <label className={labelBase}>
+              Description <span className="text-rose-500">*</span>
             </label>
-
             <textarea
               required
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the found item, its colour, condition and other visible features..."
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-600 resize-none"
+              placeholder={`Describe the ${
+                isLost ? "lost" : "found"
+              } item, its colour, condition and other visible features...`}
+              className={`${inputBase} px-4 resize-none`}
             />
           </div>
 
           {/* Date and Additional Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Date Found *
+              <label className={labelBase}>
+                {isLost ? "Date lost" : "Date found"} <span className="text-rose-500">*</span>
               </label>
-
               <div className="relative">
-                <Calendar size={18} className="absolute left-3 top-3.5 text-slate-400" />
-
+                <Calendar
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   type="date"
                   required
                   value={dateFound}
                   onChange={(e) => setDateFound(e.target.value)}
                   max={new Date().toISOString().split("T")[0]}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-600"
+                  className={`${inputBase} pl-11 pr-4`}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Additional Details (Optional)
+              <label className={labelBase}>
+                Additional details <span className="text-slate-400 font-normal">(optional)</span>
               </label>
-
               <div className="relative">
-                <Star size={18} className="absolute left-3 top-3.5 text-slate-400" />
-
+                <Star
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   type="text"
                   value={additionalDetails}
                   onChange={(e) => setAdditionalDetails(e.target.value)}
-                  placeholder="Any other helpful information..."
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-600"
+                  placeholder="Any other info... (contact no)"
+                  className={`${inputBase} pl-11 pr-4`}
                 />
               </div>
             </div>
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2
-            bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50
-            text-white font-semibold py-3.5 rounded-xl transition-all"
-        >
-            <Plus size={20} />
-
-            {isSubmitting ? "Uploading..." : "Post Found Item"}
-        </button>
-          <p className="text-xs text-center text-slate-400">
-            Please provide accurate information to help the owner find their item.
-          </p>
-
-        </form>
-      </div>
+          {/* Submit */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed ${
+                isLost
+                  ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200"
+                  : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200"
+              }`}
+            >
+              {isSubmitting ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <Plus size={20} />
+              )}
+              {isSubmitting ? "Uploading..." : isLost ? "Post lost item" : "Post found item"}
+            </button>
+            <p className="text-xs text-center text-slate-400 mt-3">
+              Please provide accurate information to help the owner find their item.
+            </p>
+          </div>
+        </div>
+      </form>
     </div>
   );
 }

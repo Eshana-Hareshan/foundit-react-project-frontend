@@ -14,6 +14,7 @@ interface BackendItem {
   userId: string | { _id: string };
   status?: "LOST" | "FOUND";
   isPaid?: boolean;
+  isResolved?: boolean;
 }
 
 const mapItem = (item: BackendItem): AdItem => ({
@@ -30,13 +31,16 @@ const mapItem = (item: BackendItem): AdItem => ({
       ? item.userId
       : item.userId._id,
   status: item.status,
-  isPaid: item.isPaid
+  isPaid: item.isPaid,
+  isResolved: item.isResolved ?? false
 });
 
+// Get all items with search and category filters
 export const getAllItems = async (
   page: number = 1,
   limit: number = 50,
-  category?: string
+  category?: string,
+  search?: string
 ): Promise<{ data: AdItem[]; total: number }> => {
   try {
     const res = await api.get("/items", {
@@ -46,7 +50,8 @@ export const getAllItems = async (
         category:
           category && category !== "All"
             ? category
-            : undefined
+            : undefined,
+        search: search?.trim() || undefined
       }
     });
 
@@ -57,7 +62,7 @@ export const getAllItems = async (
 
     return {
       data: items,
-      total: res.data?.total || items.length
+      total: res.data?.total || 0
     };
   } catch (err) {
     console.error("Error fetching items:", err);
@@ -65,6 +70,7 @@ export const getAllItems = async (
   }
 };
 
+// Get paid advertisements
 export const getPaidAds = async (
   page: number = 1,
   limit: number = 6,
@@ -97,4 +103,10 @@ export const getPaidAds = async (
     console.error("Error fetching paid ads:", err);
     return { data: [], total: 0 };
   }
+};
+
+// Mark item as resolved
+export const markItemAsResolved = async (id: string) => {
+  const res = await api.patch(`/items/${id}/resolve`);
+  return res.data;
 };

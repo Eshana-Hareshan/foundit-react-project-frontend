@@ -37,3 +37,9 @@ export const sendMessage = async (
 
     return res.data.newMessage;
 };
+
+// 4. Get unread message count
+export const getUnreadMessageCount = async () => {
+    const res = await api.get("/chats/unread-count");
+    return res.data.unreadCount;
+};

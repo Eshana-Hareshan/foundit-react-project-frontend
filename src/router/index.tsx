@@ -11,6 +11,14 @@ import AddItem from "../pages/AddItem"
 import ItemDetails from "../pages/ItemDetails"
 import EditItem from "../pages/EditItem"
 import MyProfile from "../pages/MyProfile"
+import ForgotPassword from "../pages/ForgotPassword"
+import AdminLayout from "../components/admin/AdminLayout"
+import AdminDashboard from "../pages/admin/AdminDashboard"
+import AdminUsers from "../pages/admin/AdminUsers"
+import AdminItems from "../pages/admin/AdminItems"
+import AdminReports from "../pages/admin/AdminReports"
+import AdminSettings from "../pages/admin/AdminSettings"
+import AdminModerationHistory from "../pages/admin/AdminModerationHistory";
 
 type RequireAuthTypes = { children: ReactNode; roles?: string[] }
 
@@ -50,11 +58,14 @@ export default function AppRouter() {
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         
         {/* Public & Main Layout Routes */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/all-items" element={<AllItem />} />
+          <Route path="/items/:id" element={<ItemDetails />} />
+
           
           {/* Protected Routes */}
           <Route
@@ -75,14 +86,6 @@ export default function AppRouter() {
             }
           />
 
-          <Route 
-            path="/items/:id" 
-            element={
-              <RequireAuth>
-                <ItemDetails />
-              </RequireAuth>
-            } 
-          />
 
           <Route 
             path="/items/:id/edit" 
@@ -101,6 +104,24 @@ export default function AppRouter() {
               </RequireAuth>
             } 
           />
+            
+        </Route>
+
+         {/* Admin Layout Routes */}
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth roles={["ADMIN"]}>
+              <AdminLayout />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="items" element={<AdminItems />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="moderation-history"element={<AdminModerationHistory />}/>
         </Route>
 
         <Route path="*" element={<Navigate to="/all-items" replace />} />
