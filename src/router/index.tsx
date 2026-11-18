@@ -19,6 +19,8 @@ import AdminItems from "../pages/admin/AdminItems"
 import AdminReports from "../pages/admin/AdminReports"
 import AdminSettings from "../pages/admin/AdminSettings"
 import AdminModerationHistory from "../pages/admin/AdminModerationHistory";
+import NotificationBell from "../pages/NotificationBell"
+import Settings from "../pages/Settings"
 
 type RequireAuthTypes = { children: ReactNode; roles?: string[] }
 
@@ -49,6 +51,7 @@ const RequireAuth = ({ children, roles }: RequireAuthTypes) => {
       </div>
     )
   }
+
   return <>{children}</>
 }
 
@@ -56,13 +59,14 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
-        {/* Public & Main Layout Routes */}
+        {/* Main Layout Routes */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
+          <Route index element={<Home />} />
           <Route path="/all-items" element={<AllItem />} />
           <Route path="/items/:id" element={<ItemDetails />} />
 
@@ -104,6 +108,24 @@ export default function AppRouter() {
               </RequireAuth>
             } 
           />
+
+          <Route
+            path="/notifications"
+            element={
+              <RequireAuth>
+                <NotificationBell />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <RequireAuth>
+                <Settings />
+              </RequireAuth>
+            }
+          />
             
         </Route>
 
@@ -121,10 +143,8 @@ export default function AppRouter() {
           <Route path="items" element={<AdminItems />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="settings" element={<AdminSettings />} />
-          <Route path="moderation-history"element={<AdminModerationHistory />}/>
+          <Route path="moderation-history" element={<AdminModerationHistory />} />
         </Route>
-
-        <Route path="*" element={<Navigate to="/all-items" replace />} />
       </Routes>
     </BrowserRouter>
   )

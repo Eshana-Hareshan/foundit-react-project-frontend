@@ -1,4 +1,3 @@
-
 import api from "./api";
 import type { AdItem } from "../components/common/ItemCard";
 
@@ -109,4 +108,36 @@ export const getPaidAds = async (
 export const markItemAsResolved = async (id: string) => {
   const res = await api.patch(`/items/${id}/resolve`);
   return res.data;
+};
+
+export interface ItemMatch {
+  _id: string;
+  matchScore: number;
+  isPossibleMatch: boolean;
+  explanation: string;
+  matchingDetails: string[];
+  conflictingDetails: string[];
+  analysisDate: string;
+  matchedItem: {
+    _id: string;
+    itemName: string;
+    category: string;
+    location: string;
+    dateFound: string;
+    imageUrl: string;
+    description: string;
+    status: "LOST" | "FOUND";
+    isResolved?: boolean;
+  };
+}
+
+// Get AI-powered matching suggestions for an item
+export const getItemMatches = async (itemId: string): Promise<ItemMatch[]> => {
+  try {
+    const res = await api.get(`/items/${itemId}/matches`);
+    return res.data?.data || [];
+  } catch (err) {
+    console.error("Error fetching item matches:", err);
+    return [];
+  }
 };

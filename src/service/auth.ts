@@ -70,3 +70,23 @@ export const refreshTokenCall = async (refreshToken: string) => {
     });
     return res.data;
 };
+
+// Update current user's profile information (name)
+export const updateProfile = async (name: string) => {
+    const res = await api.put("/auth/profile", {
+        name
+    });
+    return res.data;
+};
+
+// Change current user's password
+export const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+) => {
+    const res = await api.put("/auth/change-password", {
+        currentPassword,
+        newPassword
+    });
+    return res.data;
+};

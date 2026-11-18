@@ -17,7 +17,8 @@ import {
 import api from "../service/api";
 import { AuthContext } from "../context/AuthContext";
 import { createConversation } from "../service/chat";
-import {createReport} from "../service/report";
+import { createReport } from "../service/report";
+import MatchingSuggestions from "./MatchingSuggestions";
 
 interface ItemDetailsType {
     _id: string;
@@ -171,8 +172,8 @@ export default function ItemDetails() {
 
     if (loading) {
         return (
-            <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 md:h-[calc(100dvh-9rem)] animate-pulse">
-                <div className="bg-emerald-100/60 rounded-3xl h-64 md:h-full" />
+            <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 animate-pulse">
+                <div className="bg-emerald-100/60 rounded-3xl h-64 md:h-96" />
                 <div className="space-y-4">
                     <div className="h-6 w-28 bg-emerald-100/60 rounded-full" />
                     <div className="h-10 w-3/4 bg-emerald-100/60 rounded-xl" />
@@ -203,9 +204,7 @@ export default function ItemDetails() {
     const isLost = item.status === "LOST";
 
     return (
-        // On desktop (md+) the whole page is locked to the visible screen height.
-        // Only the description box scrolls internally if the text is very long.
-        <div className="max-w-5xl mx-auto md:h-[calc(100dvh-9rem)] md:flex md:flex-col">
+        <div className="max-w-5xl mx-auto space-y-6 pb-12">
             <Link
                 to="/items"
                 className="self-start inline-flex items-center gap-2 mb-3 px-3.5 py-1.5 rounded-full text-sm font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition-colors"
@@ -214,9 +213,9 @@ export default function ItemDetails() {
                 Back to items
             </Link>
 
-            <div className="grid md:grid-cols-2 gap-5 lg:gap-8 md:flex-1 md:min-h-0">
+            <div className="grid md:grid-cols-2 gap-5 lg:gap-8 items-start">
                 {/* ============ IMAGE ============ */}
-                <div className="relative h-64 sm:h-80 md:h-full min-h-0">
+                <div className="relative h-64 sm:h-80 md:h-[460px] md:sticky md:top-24">
                     <img
                         src={item.imageUrl}
                         alt={item.itemName}
@@ -243,7 +242,7 @@ export default function ItemDetails() {
                 </div>
 
                 {/* ============ DETAILS ============ */}
-                <div className="flex flex-col gap-3 md:min-h-0">
+                <div className="flex flex-col gap-3">
                     <div>
                         <span className="inline-block text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
                             {item.category}
@@ -285,8 +284,8 @@ export default function ItemDetails() {
                         </div>
                     </div>
 
-                    {/* Description (scrolls inside itself if very long) */}
-                    <div className="md:flex-1 md:min-h-0 md:overflow-y-auto pr-1">
+                    {/* Description */}
+                    <div className="pr-1">
                         <h2 className="font-bold text-emerald-950 text-sm mb-1">Description</h2>
                         <p className="text-sm text-slate-600 leading-relaxed">{item.description}</p>
                     </div>
@@ -320,7 +319,7 @@ export default function ItemDetails() {
                                 </div>
                             </div>
 
-                            {/* Owner actions (side by side to save height) */}
+                            {/* Owner actions */}
                             {isOwner && (
                                 <div className="space-y-2 pt-3 border-t border-emerald-100">
                                     <div className="grid grid-cols-2 gap-2.5">
@@ -381,12 +380,10 @@ export default function ItemDetails() {
                                             {chatError}
                                         </p>
                                     )}
-                                    
 
                                     {/* Report Post */}
                                     {currentUser && !isOwner && (
                                         <div className="pt-3 border-t border-emerald-100 space-y-3">
-
                                             {!showReportForm ? (
                                                 <button
                                                     onClick={() => {
@@ -494,7 +491,6 @@ export default function ItemDetails() {
                                             )}
                                         </div>
                                     )}
-
                                 </div>
                             )}
 
@@ -514,6 +510,13 @@ export default function ItemDetails() {
                     )}
                 </div>
             </div>
+
+            {/* AI-Powered Matching Suggestions Section */}
+            <MatchingSuggestions
+                itemId={item._id}
+                itemStatus={item.status}
+                itemName={item.itemName}
+            />
         </div>
     );
 }

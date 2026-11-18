@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getUnreadMessageCount } from "../../service/chat";
-import NotificationBell from "../notifications/NotificationBell";
 import { getPublicSettings } from "../../service/publicSettings";
 
 export interface CurrentUser {
@@ -289,17 +288,25 @@ export default function Header({
                       >
                         <UserIcon size={16} /> My Profile &amp; Posts
                       </button>
-                      <div className="px-4 py-2 flex items-center justify-between">
-                          <span className="text-sm text-slate-700 flex items-center gap-2.5">
-                              <Bell size={16} />
-                              Notifications &amp; Alerts
-                          </span>
-
-                          <NotificationBell />
-                      </div>
 
                       <button
                         role="menuitem"
+                        onClick={() => {
+                          closeMenus();
+                          navigate('/notifications');
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2.5"
+                      >
+                        <Bell size={16} />
+                        Notifications &amp; Alerts
+                      </button>
+
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          closeMenus();
+                          navigate('/settings');
+                        }}
                         className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2.5"
                       >
                         <Settings size={16} /> Settings &amp; Security

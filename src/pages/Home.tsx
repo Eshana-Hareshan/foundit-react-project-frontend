@@ -117,8 +117,8 @@ export const Home = () => {
         <PageHeader
           title="Featured Paid Ads"
           description="Promoted lost & found items with priority listing"
-          actionLabel="View All Items"
-          actionLink="/all-items"
+          // actionLabel="View All Items"
+          // actionLink="/all-items"
         />
 
         {loading ? (

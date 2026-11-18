@@ -1,4 +1,3 @@
-
 import api from "./api";
 
 // Get notifications belonging to the logged-in user
@@ -7,7 +6,7 @@ export const getMyNotifications = async () => {
     return response.data;
 };
 
-// Mark a notification as read
+// Mark a single notification as read
 export const markNotificationAsRead = async (
     notificationId: string
 ) => {
@@ -15,5 +14,11 @@ export const markNotificationAsRead = async (
         `/notifications/${notificationId}/read`
     );
 
+    return response.data;
+};
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async () => {
+    const response = await api.patch("/notifications/read-all");
     return response.data;
 };

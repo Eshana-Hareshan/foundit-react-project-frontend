@@ -127,18 +127,28 @@ function Register() {
                 "OTP sent to your email. Please check your inbox."
             );
 
-        } catch (error) {
+        } catch (error: any) {
 
             console.error("Registration error:", error);
 
+            console.error(
+                "Backend response:",
+                error.response?.data
+            );
+
+            console.error(
+                "HTTP status:",
+                error.response?.status
+            );
+
             alert(getErrorMessage(error));
 
-        } finally {
+                } finally {
 
-            setLoading(false);
+                    setLoading(false);
 
-        }
-    };
+                }
+            };
 
     // OTP verification
     const handleVerifyOTP = async () => {
